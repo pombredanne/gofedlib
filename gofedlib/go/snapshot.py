@@ -1,4 +1,5 @@
 import json
+import yaml
 
 class Snapshot(object):
 
@@ -67,3 +68,50 @@ class Snapshot(object):
 		with open(file, "r") as f:
 			data = json.load(f)
 
+	def readGlideLockFile(self, file):
+		with open(file, "r") as f:
+			data = yaml.load(f)
+
+		if "imports" in data:
+			imported_pkgs = data["imports"]
+		else:
+			raise ValueError("imports key missing in %s" % file)
+
+		packages = {}
+		for package in imported_pkgs:
+			for key in ["name", "version"]:
+				if key not in package:
+					raise ValueError("package key missing in import array item in %s" % file)
+
+			if "subpackages" in package:
+				for subpkg in package["subpackages"]:
+					packages["%s/%s" % (package["name"], subpkg)] = package["version"]
+			else:
+				packages[package["name"]] = package["version"]
+
+		self.clear()
+		self._packages = packages
+
+		return self
+
+        def readVendorFile (self, file):
+            with open(file,"r") as f:
+                data = json.load(f)
+
+            if "package" not in data:
+                raise ValueError("package key missing in %s" % file)
+
+            packages = {}
+
+            for package in data["package"]:
+                if "path" not in package:
+                    raise ValueError("Import path missing in %s" % file)
+                if "revision" not in package:
+                    raise ValueError("Revision missing in %s" % file)
+
+                packages[package["path"]] = package["revision"]
+
+            self.clear()
+            self._packages = packages
+
+            return self

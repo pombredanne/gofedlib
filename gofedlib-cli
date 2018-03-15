@@ -57,7 +57,7 @@ def get_dependencies(packages, selection):
 
     for key in dependencies.keys():
         dependencies[key] = ippaths2providers(dependencies[key])
-        dependencies[key] = map(lambda l: 'https://%s' % l, dependencies[key])
+        dependencies[key] = list(map(lambda l: 'https://%s' % l, dependencies[key]))
 
     return dependencies
 
@@ -81,10 +81,15 @@ if __name__ == '__main__':
                     default=None, type=str)
     ap.add_argument('-r', '--raw-project-packages', help="raw output from gofedlib",
                     default=False, action='store_true')
+    ap.add_argument('-s', '--skip-errors', help="Skip errors encountered when parsing project dependencies",
+                    default=False, action='store_true')
 
     args = ap.parse_args()
     result = {}
     project_package_info = None
+
+    # Remove trailing slashes on the input path
+    args.path = args.path.rstrip("/")
 
     if args.raw_project_packages:
         project_package_info = project_packages(args.path)
@@ -106,7 +111,7 @@ if __name__ == '__main__':
             'tests': args.dependencies_tests
         }
 
-        result.update(get_dependencies(project_packages(args.path), selection))
+        result.update(get_dependencies(project_packages(args.path, skip_errors=args.skip_errors), selection))
 
     if args.output:
         with open(args.output, 'w') as f:
